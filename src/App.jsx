@@ -1,7 +1,7 @@
 import "./App.css";
 import { useState } from "react";
 import Content from "./components/Content";
-import AddCustomer from "./components/addCustomer";
+import AddCustomer from "./components/AddCustomer";
 
 function App() {
   const [data, setData] = useState([]);

@@ -1,57 +1,73 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { deleteCustomer, setLoading } from "../slice/DataSlice";
+import {
+  deleteCustomer,
+  sortData,
+  setLoading,
+  setData,
+} from "../slice/DataSlice";
 import axios from "axios";
 
 const Content = () => {
-  const dispatch = useDispatch();
   const data = useSelector((state) => state.dataBox.data);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(fetchData());
-  }, []);
+  }, [dispatch]);
 
-  const [sortAscending, setSortAscending] = useState(true);
-  const [pageLength, setPageLength] = useState(data.length);
-  const [sortedData, setSortedData] = useState([]);
-
-  const filteredData = useCallback(() => {
-    return sortedData.slice(0, pageLength);
-  }, [pageLength, sortedData]);
-
-  const handleOption = (e) => {
-    const num = e.target.value;
-    const newNum = parseFloat(num);
-    setPageLength(newNum);
-  };
-
+  const [isAscending, setIsAscending] = useState(true);
+  const [selectedItemCount, setSelectedItemCount] = useState(data.length);
+  const [displayedData, setDisplayedData] = useState([]);
   const fetchData = () => async (dispatch) => {
     try {
       dispatch(setLoading());
       const response = await axios.get(
         "https://northwind.vercel.app/api/customers"
       );
-      setPageLength(response.data.length);
-      setSortedData(response.data);
+      dispatch(setData(response.data));
     } catch (error) {
       console.log(error, "error");
     }
   };
 
-  const handleChange = () => {
-    const newSortedData = [...sortedData];
-    newSortedData.sort((a, b) => {
-      const companyA = a.companyName.toLowerCase();
-      const companyB = b.companyName.toLowerCase();
-      return sortAscending
-        ? companyA.localeCompare(companyB)
-        : companyB.localeCompare(companyA);
-    });
+  useEffect(() => {
+    let splicedData = [];
+    switch (selectedItemCount) {
+      case "0":
+        setDisplayedData(data);
+        break;
+      case "5":
+        splicedData = data.slice(0, 5);
+        setDisplayedData(splicedData);
+        break;
+      case "10":
+        splicedData = data.slice(0, 10);
+        setDisplayedData(splicedData);
+        break;
+      case "15":
+        splicedData = data.slice(0, 15);
+        setDisplayedData(splicedData);
+        break;
+      case "20":
+        splicedData = data.slice(0, 20);
+        setDisplayedData(splicedData);
+        break;
+      default:
+        setDisplayedData(data);
+        break;
+    }
+  }, [data, selectedItemCount]);
 
-    setSortAscending(!sortAscending);
-    setSortedData(newSortedData);
+  const handleSort = (field) => {
+    dispatch(sortData({ field, ascending: isAscending }));
+    setIsAscending(!isAscending);
   };
 
+  const handleOption = (e) => {
+    const num = e.target.value;
+    setSelectedItemCount(num);
+  };
   return (
     <div className="flex relative">
       <select
@@ -60,7 +76,7 @@ const Content = () => {
         name="itemCount"
         id="itemCount"
       >
-        <option value={sortedData.length}>All</option>
+        <option value={0}>All</option>
         <option value="5">5</option>
         <option value="10">10</option>
         <option value="15">15</option>
@@ -72,17 +88,22 @@ const Content = () => {
             <th className="border-collapse border-2"></th>
             <th className="border-collapse border-2">ID</th>
             <th
-              onClick={handleChange}
+              onClick={() => handleSort("companyName")}
               className="border-collapse border-2 cursor-pointer"
             >
               Company Name
             </th>
-            <th className="border-collapse border-2">Street</th>
+            <th
+              onClick={() => handleSort("")}
+              className="border-collapse border-2"
+            >
+              Street
+            </th>
             <th className="border-collapse border-2">City</th>
           </tr>
         </thead>
         <tbody className="border-collapse border-2">
-          {filteredData()?.map((d, i) => (
+          {displayedData?.map((d, i) => (
             <tr className="border-collapse border-2" key={d.id}>
               <td className="border-collapse border-2">{i + 1}</td>
               <td className="border-collapse border-2">{d.id}</td>
@@ -91,7 +112,7 @@ const Content = () => {
               <td className="border-collapse border-2">{d.address?.city}</td>
               <td>
                 <button onClick={() => dispatch(deleteCustomer(d))}>
-                  delete customer
+                  delete
                 </button>
               </td>
             </tr>
